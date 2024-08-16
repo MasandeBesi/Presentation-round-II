@@ -1,0 +1,27 @@
+/*-- scss:defaults --*/
+
+// White background and black text
+$body-bg: #ffffff !default;
+$body-color: #000000 !default;
+
+/*-- scss:rules --*/
+
+.reveal {
+    background-color: $body-bg;
+    color: $body-color;
+}
+
+.reveal .slides > section {
+    color: $body-color;
+}
+
+.reveal .slides {
+    background-color: $body-bg;
+}
+
+.reveal .toc a {
+    color: inherit; // inherit color from theme
+}
+
+
+

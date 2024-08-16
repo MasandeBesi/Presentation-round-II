@@ -1,0 +1,191 @@
+---
+title: |
+  <div style="text-align: left; margin-top: 0.5cm; font-size: 60px;">
+  Mean-Variance Hedging with Neural Networks using Heston Model
+  <hr style="margin-top: 10px; border: none; height: 1px; background-color: black;">
+  <div>
+subtitle: |
+  <div style="display: flex; justify-content: space-between; width: 60%; font-size: 60px; font-weight: bold; ">
+    <div style="text-align: left;">
+      Author :
+      Lwando Mbanguta
+      Masande Besi
+    </div>
+    <div style="text-align: right;">
+      Supervisor :
+      Yuri Robbertze
+      Jake Stangroom
+    </div>
+  </div>
+title-slide-attributes:
+    data-background-image: logo.png
+    data-background-size: contain
+    data-background-opacity: "0.0"
+format:
+  revealjs: 
+    theme: [serif, serif custom.scss]
+    logo: UCT logo horizontal grayscale large.png
+---
+
+# Table of Contents. {.toc}
+
+-   [Where we left off](#where-we-left-off).
+-   [Amazon and Google Data](#where-we-left-off).
+-   [Neural Network Application.](#neural-network-application)
+-   [What Next?](#what-next)
+
+# Where we left off.
+
+## Abstract
+
+**Objective:** Investigate the effectiveness of hedging European basket options within a contractual framework between two parties.
+
+**Model Choice:** Heston Model, a stochastic volatility model, to optimise the hedging strategy.
+
+The two stocks and the volatilities for $i \in \{1,2\}$:
+
+```{=tex}
+\begin{align*}
+    dS_t^i &= \mu^i S_t^idt + \sqrt{V_t^i} S^i_td W^{S^i}_t \\
+    dV_t^i = &\kappa^i (\theta^i - V_t^i)dt + \xi^i\sqrt{V_t^i}dW_t^{V^i}
+\end{align*}
+```
+## Parameter Estimation
+
+How do we get these? $$
+[\mu^1, \mu^2, \kappa^1, \kappa^2, \xi^1, \xi^2, \theta^1, \theta^2, \rho_{s^1s^2}, \rho_{s^1v^1}, \rho_{s^2v^2}]
+$$ Discretise the Heston Model using Euler's method \begin{align*}
+S_{t + \Delta t}^i &= S^i_t + \mu^i S^i_t \Delta t + \sqrt{V^i_t}S^i_t\sqrt{\Delta t}Z^S_i \\
+    V_{t + \Delta t}^i = &V^i_t + \kappa^i(\theta^i - V^i_t)dt + \xi^i \sqrt{V^i_t}  \sqrt{\Delta t}Z^V_i
+\end{align*}
+
+Let $\pmb{X}_t = (S_t^1, S_t^2, V_t^1, V_t^2)$
+
+::: footer
+Learn more:
+:::
+
+##  {visibility="uncounted"}
+
+$$
+\pmb{X}_{t+\Delta t}|\pmb{X}_t \sim MVN (\pmb{m}_t, \pmb{\Sigma_t})
+$$
+
+The log-likelihood function:
+
+```{=tex}
+\begin{align*}
+\text{log}[L(\pmb{\eta})] &= -2n\text{log}(2\pi) - \frac{1}{2} \sum_{t =1}^n\text{log}|\pmb \Sigma_t| \\
+& \qquad -\frac{1}{2} \sum_{t=1}^n(\pmb x_{t+\Delta t} - \pmb m_t)^T \pmb \Sigma^{-1}_t(\pmb x_{t+\Delta t} - \pmb m_t)
+\end{align*}
+```
+Where $\pmb{\eta}$ encapsulates all the parameters.
+
+# Amazon and Google Data.
+
+## 
+
+![Google and Amazon historical stock prices. Source: Bloomberge Data](AmazonGoogle.png){.border .border-thick fig-align="center" width="25cm"}
+
+$$
+\scriptsize
+[0.194, 0.268, 4.597, 2.041, 0.179, 0.493, 0.772, 0.407, 0.848, -0.010, -0.012]
+$$
+
+# Neural Network Application.
+
+## The Network
+
+For each path simulation obtain $S_t^1$, $S^2_t$, $\tau$ and $H_t$.
+
+$$
+f^{NN}(S^1_t, S^2_t, \tau) = (\phi^1_t, \phi^2_t)
+$$
+
+**Objective Function**
+
+-   One day P/L =$\sum^2_{i=1}\phi^i_t \cdot (S^i_{t+1}- S^i_t)$
+
+-   Option price $H_t = \sum^2_{i=1}\phi^i_t \cdot S^i_t$
+
+$$ \text{Loss} = \bigg[\text{One day P/L} - \Delta H_t \bigg]^2 $$
+
+```{=tex}
+The goal is to minimise this loss i.e. the neural network should learn to adjust $\phi^1_t$ and $\phi^2_t$ to effectively hedge the option.
+```
+## Hyperparameter Tuning
+
+-   Activation Functions?
+
+-   Number of Layers?
+
+-   Number of Nodes in each layer?
+
+-   Learning rate for backpropagation?
+
+-   Which optimiser to use? there are many but we will look at Adam and Stochastic Gradient Descent (SGD)
+
+-   Regularisation to use $L_1$ or $L_2$ ?
+
+## Stock Price Simulations
+
+![Simulated future stock prices for the month of June.](JuneSimulatedManyPrices.png){fig-align="center"}
+
+## Single Simulation For Each Stock
+
+![Single path simulation for each stock.](JuneSimulatedPrices.png){fig-align="center"}
+
+## Hyperparameter configurations
+
+![Validation loss for different configurations.](Heatmap.png){fig-align="center" width="55cm"}
+
+## 
+
+| Hyperparameter      |               |
+|---------------------|---------------|
+| Activation Function | ReLU          |
+| Learning Rate       | 0.001         |
+| Optimiser           | Adam          |
+| Regularisation      | $L_1$ (0.001) |
+
+: Best hyperparameters for this scenario.
+
+$$
+(30, 60, 30) - \text{Neural Network}
+$$
+
+## Predictions $(\phi^1_t, \phi^2_t)$
+
+![Portfolio holdings on the single simulated stock paths.](BestNeuralNetworkHedge.png){fig-align="center" width="30cm"}
+
+$$
+V_t = V_0 + \sum^2_{i = 1} \phi^i_t \cdot \Delta S_t^i
+$$
+
+# What Next? {#what-next}
+
+## Train the Neural Network on multiple paths.
+
+![Fit the neural network on many simulated paths (10 000).](manypathsHedge.jpg){fig-align="center" width="68.4cm"}
+
+$\text{PNL (Profit/Losses)}  = V - H$
+
+## 
+
+Compare to Black-scholes performance
+
+![Black-scholes profit/losses for 10000 simulated paths.](ProfitLossBS.png){fig-align="center" width="13.2cm"}
+
+# Questions ?
+
+## Mean $\pmb{m_t}$ and Covariance $\pmb{\Sigma}_t$ {visibility="hidden"}
+
+```{=tex}
+\begin{bmatrix}
+S^1_{t-1} + \mu^1 S_{t-1}^1 \Delta t & \\
+S^2_{t-1} + \mu^2 S^2_{t-1} \Delta t \\
+V^1_{t-1} + \kappa^1(\theta^1 - V^1_{t-1})\Delta t\\
+V^2_{t-1} + \kappa^2(\theta^2 - V^2_{t-1})\Delta t\\
+\end{bmatrix}
+```
+![](covariance.png){fig-align="center" height="200px" widths="500px"}
